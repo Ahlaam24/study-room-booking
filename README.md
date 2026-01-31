@@ -4,7 +4,7 @@ A modern, user-friendly web application for university students to book study ro
 
 ## 🚀 Live Demo
 
-**[View Live Demo](https://Ahlaam24.github.io/Study-rooms/)**
+**[View Live Demo](https://ahlaam24.github.io/study-room-booking/)**
 
 Experience the application in action! The live demo is hosted on GitHub Pages.
 
