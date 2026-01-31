@@ -13,9 +13,10 @@ Experience the application in action! The live demo is hosted on GitHub Pages.
 - 📚 **View Available Rooms**: Browse through a variety of study rooms with different capacities and amenities
 - 🔍 **Smart Filtering**: Filter rooms by capacity, date, and time to find the perfect study space
 - 📅 **Easy Booking**: Simple booking process with date, time, and duration selection
-- 📋 **My Bookings**: View all your bookings in one place
-- ❌ **Cancel Bookings**: Easily cancel any of your existing bookings
-- 💾 **Data Persistence**: All bookings are saved in your browser's localStorage
+- 👤 **Accounts**: Sign up and log in; bookings are tied to your account on this device
+- 📋 **My Bookings**: View your bookings in one place
+- ❌ **Cancel Bookings**: Cancel your own reservations
+- 💾 **Data Persistence**: Bookings and accounts are saved in your browser's localStorage
 - 📱 **Responsive Design**: Works beautifully on desktop, tablet, and mobile devices
 
 ## Getting Started
@@ -25,13 +26,14 @@ Experience the application in action! The live demo is hosted on GitHub Pages.
    - No installation or setup required!
 
 2. **Book a Room**
+   - Sign up or log in from the header
    - Click on the "Available Rooms" tab
    - Use filters to find rooms that match your needs
    - Click "Book Now" on any available room
    - Fill in your details and confirm the booking
 
 3. **Manage Your Bookings**
-   - Click on the "My Bookings" tab to see all your reservations
+   - Click on the "My Bookings" tab to see your reservations
    - Cancel any booking by clicking the "Cancel Booking" button
 
 ## Room Features
@@ -47,6 +49,7 @@ The app includes 8 different study rooms with various features:
 - **HTML5**: Structure and semantic markup
 - **CSS3**: Modern styling with CSS Grid, Flexbox, and animations
 - **JavaScript (Vanilla)**: All functionality without any frameworks
+- **Web Crypto API**: Password hashing for sign-up and login
 - **LocalStorage API**: Client-side data persistence
 
 ## Browser Compatibility
@@ -60,7 +63,7 @@ Works on all modern browsers:
 ## Future Enhancements
 
 Potential features for future versions:
-- User authentication
+- Server-backed auth and sync across devices
 - Email notifications
 - Calendar integration
 - Room availability calendar view
