@@ -58,6 +58,14 @@ const studyRooms = [
     }
 ];
 
+/** Plain text → safe HTML text (prevents XSS when using innerHTML). */
+function escapeHtml(value) {
+    if (value == null) return '';
+    const el = document.createElement('span');
+    el.textContent = String(value);
+    return el.innerHTML;
+}
+
 // --- Auth & user-scoped data (localStorage on this device) ---
 const STORAGE_USERS = 'studyRoomUsers';
 const STORAGE_SESSION = 'studyRoomSessionUserId';
@@ -194,8 +202,8 @@ function wireModalCloses() {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
-    // Set minimum date to today
-    const today = new Date().toISOString().split('T')[0];
+    // Minimum date = local "today" (toISOString() would use UTC and confuse dates near midnight)
+    const today = formatDateForInput();
     document.getElementById('date-filter').min = today;
     document.getElementById('booking-date').min = today;
 
@@ -376,11 +384,7 @@ function renderRooms() {
     const dateFilter = document.getElementById('date-filter').value;
     const timeFilter = document.getElementById('time-filter').value;
 
-    // Get bookings for the selected date
     const bookings = getBookings();
-    const filteredBookings = dateFilter 
-        ? bookings.filter(b => b.date === dateFilter)
-        : bookings;
 
     roomsGrid.innerHTML = '';
 
@@ -393,8 +397,8 @@ function renderRooms() {
             }
         }
 
-        // Check availability
-        const isAvailable = checkRoomAvailability(room.id, dateFilter, timeFilter, filteredBookings);
+        // Pass all bookings: a slot on date D can be blocked by a booking that started the previous day and crosses midnight
+        const isAvailable = checkRoomAvailability(room.id, dateFilter, timeFilter, bookings);
 
         const roomCard = document.createElement('div');
         roomCard.className = `room-card ${!isAvailable ? 'unavailable' : ''}`;
@@ -426,37 +430,52 @@ function renderRooms() {
     });
 }
 
+// --- Booking time as real instants (handles sessions that cross midnight) ---
+/** YYYY-MM-DD in the user's local timezone (for date input min/max). */
+function formatDateForInput(date = new Date()) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function parseLocalDateTime(dateStr, timeStr) {
+    const d = new Date(`${dateStr}T${timeStr}`);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+function bookingInterval(booking) {
+    const start = parseLocalDateTime(booking.date, booking.startTime);
+    if (!start) return null;
+    const hours = Number(booking.duration);
+    if (!Number.isFinite(hours) || hours <= 0) return null;
+    const end = new Date(start.getTime() + hours * 3600000);
+    return { start, end };
+}
+
+function intervalsOverlap(startA, endA, startB, endB) {
+    return startA < endB && startB < endA;
+}
+
 // Check if room is available at given date/time
 function checkRoomAvailability(roomId, date, time, bookings) {
     if (!date || !time) {
         return true; // Show all rooms if no date/time filter
     }
 
-    const bookingsForRoom = bookings.filter(b => b.roomId === roomId && b.date === date);
-    
-    if (bookingsForRoom.length === 0) {
-        return true;
-    }
+    const requested = parseLocalDateTime(date, time);
+    if (!requested) return true;
 
-    const requestedTime = timeToMinutes(time);
-    
-    // Check for conflicts
-    for (const booking of bookingsForRoom) {
-        const bookingStart = timeToMinutes(booking.startTime);
-        const bookingEnd = bookingStart + (booking.duration * 60);
-        
-        if (requestedTime >= bookingStart && requestedTime < bookingEnd) {
+    for (const booking of bookings) {
+        if (booking.roomId !== roomId) continue;
+        const iv = bookingInterval(booking);
+        if (!iv) continue;
+        if (requested >= iv.start && requested < iv.end) {
             return false;
         }
     }
 
     return true;
-}
-
-// Convert time string to minutes
-function timeToMinutes(time) {
-    const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + minutes;
 }
 
 // Open booking modal
@@ -555,31 +574,29 @@ function handleBookingSubmit(e) {
 
 // Validate booking
 function validateBooking(roomId, date, startTime, duration) {
+    const newStart = parseLocalDateTime(date, startTime);
+    if (!newStart) {
+        alert('Invalid date or time.');
+        return false;
+    }
+    const newEnd = new Date(newStart.getTime() + Number(duration) * 3600000);
+    if (!Number.isFinite(newEnd.getTime())) {
+        alert('Invalid duration.');
+        return false;
+    }
+
     const bookings = getBookings();
-    const conflictingBookings = bookings.filter(b => 
-        b.roomId === roomId && 
-        b.date === date
-    );
-
-    const requestedStart = timeToMinutes(startTime);
-    const requestedEnd = requestedStart + (duration * 60);
-
-    // Check for conflicts
-    for (const booking of conflictingBookings) {
-        const bookingStart = timeToMinutes(booking.startTime);
-        const bookingEnd = bookingStart + (booking.duration * 60);
-
-        if ((requestedStart >= bookingStart && requestedStart < bookingEnd) ||
-            (requestedEnd > bookingStart && requestedEnd <= bookingEnd) ||
-            (requestedStart <= bookingStart && requestedEnd >= bookingEnd)) {
+    for (const booking of bookings) {
+        if (booking.roomId !== roomId) continue;
+        const iv = bookingInterval(booking);
+        if (!iv) continue;
+        if (intervalsOverlap(newStart, newEnd, iv.start, iv.end)) {
             alert('This time slot is already booked. Please choose another time.');
             return false;
         }
     }
 
-    // Check if booking is in the past
-    const bookingDateTime = new Date(`${date}T${startTime}`);
-    if (bookingDateTime < new Date()) {
+    if (newStart < new Date()) {
         alert('Cannot book a room in the past. Please select a future date and time.');
         return false;
     }
@@ -614,16 +631,16 @@ function renderBookings() {
 
     noBookings.style.display = 'none';
 
-    // Sort bookings by date and time
     const sortedBookings = [...bookings].sort((a, b) => {
-        const dateCompare = a.date.localeCompare(b.date);
-        if (dateCompare !== 0) return dateCompare;
-        return a.startTime.localeCompare(b.startTime);
+        const ta = parseLocalDateTime(a.date, a.startTime);
+        const tb = parseLocalDateTime(b.date, b.startTime);
+        const aMs = ta ? ta.getTime() : 0;
+        const bMs = tb ? tb.getTime() : 0;
+        return aMs - bMs;
     });
 
     sortedBookings.forEach(booking => {
-        const endTime = calculateEndTime(booking.startTime, booking.duration);
-        const bookingDate = new Date(booking.date).toLocaleDateString('en-US', {
+        const bookingDate = new Date(booking.date + 'T12:00:00').toLocaleDateString('en-US', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
@@ -634,25 +651,55 @@ function renderBookings() {
         bookingCard.className = 'booking-card';
         bookingCard.innerHTML = `
             <div class="booking-info">
-                <div class="booking-room">${booking.roomName}</div>
-                <div class="booking-details">📅 ${bookingDate}</div>
-                <div class="booking-details">🕐 ${formatTime(booking.startTime)} - ${formatTime(endTime)} (${booking.duration} hour${booking.duration > 1 ? 's' : ''})</div>
-                <div class="booking-details">👤 ${booking.studentName} (ID: ${booking.studentId})</div>
+                <div class="booking-room">${escapeHtml(booking.roomName)}</div>
+                <div class="booking-details">📅 ${escapeHtml(bookingDate)}</div>
+                <div class="booking-details">🕐 ${escapeHtml(formatBookingRange(booking))} (${escapeHtml(booking.duration)} hour${booking.duration > 1 ? 's' : ''})</div>
+                <div class="booking-details">👤 ${escapeHtml(booking.studentName)} (ID: ${escapeHtml(booking.studentId)})</div>
             </div>
-            <button class="btn-danger" onclick="cancelBooking(${booking.id})">Cancel Booking</button>
         `;
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn-danger';
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancel Booking';
+        const bookingIdNum = Number(booking.id);
+        cancelBtn.addEventListener('click', () => {
+            if (Number.isFinite(bookingIdNum)) cancelBooking(bookingIdNum);
+        });
+        bookingCard.appendChild(cancelBtn);
 
         bookingsList.appendChild(bookingCard);
     });
 }
 
-// Calculate end time
-function calculateEndTime(startTime, duration) {
-    const start = timeToMinutes(startTime);
-    const end = start + (duration * 60);
-    const hours = Math.floor(end / 60);
-    const minutes = end % 60;
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+function localDateKey(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function formatTimeFromDate(dateObj) {
+    const hh = String(dateObj.getHours()).padStart(2, '0');
+    const mm = String(dateObj.getMinutes()).padStart(2, '0');
+    return formatTime(`${hh}:${mm}`);
+}
+
+/** e.g. "11:00 PM – 1:00 AM (Sat, Jan 4)" when end is the next calendar day */
+function formatBookingRange(booking) {
+    const iv = bookingInterval(booking);
+    if (!iv) return formatTime(booking.startTime) + ' – ?';
+    const startLabel = formatTime(booking.startTime);
+    const endLabel = formatTimeFromDate(iv.end);
+    if (localDateKey(iv.start) === localDateKey(iv.end)) {
+        return `${startLabel} – ${endLabel}`;
+    }
+    const endDatePretty = iv.end.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+    });
+    return `${startLabel} – ${endLabel} (${endDatePretty})`;
 }
 
 // Format time for display
