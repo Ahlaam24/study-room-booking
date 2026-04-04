@@ -50,6 +50,98 @@ header h1 {
     opacity: 0.9;
 }
 
+.header-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.header-brand {
+    flex: 1;
+    min-width: 200px;
+}
+
+.auth-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.auth-guest,
+.auth-user {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.auth-user-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    opacity: 0.95;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.btn-block {
+    width: 100%;
+}
+
+.modal-hint {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+}
+
+.booking-profile-hint {
+    margin-top: -0.5rem;
+    margin-bottom: 0;
+}
+
+.modal-footer-link {
+    margin-top: 1.25rem;
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--primary-dark);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+.link-btn:hover {
+    color: var(--secondary-color);
+}
+
+.form-error {
+    color: var(--danger-color);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
 main {
     padding: 2rem 0;
 }

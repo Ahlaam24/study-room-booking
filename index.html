@@ -8,13 +8,25 @@
 </head>
 <body>
     <header>
-        <div class="container">
-            <h1>📚 Study Room Booking</h1>
-            <p class="subtitle">Reserve your perfect study space</p>
+        <div class="container header-inner">
+            <div class="header-brand">
+                <h1>📚 Study Room Booking</h1>
+                <p class="subtitle">Reserve your perfect study space</p>
+            </div>
+            <div class="auth-bar" id="auth-bar">
+                <span class="auth-guest" id="auth-guest">
+                    <button type="button" class="btn-secondary btn-sm" id="btn-open-login">Log in</button>
+                    <button type="button" class="btn-primary btn-sm" id="btn-open-signup">Sign up</button>
+                </span>
+                <span class="auth-user hidden" id="auth-user">
+                    <span class="auth-user-name" id="auth-user-name"></span>
+                    <button type="button" class="btn-secondary btn-sm" id="btn-logout">Log out</button>
+                </span>
+            </div>
         </div>
     </header>
 
-    <main class="container">
+    <main class="container" id="main-content">
         <!-- Navigation Tabs -->
         <nav class="tabs">
             <button class="tab-btn active" data-tab="rooms">Available Rooms</button>
@@ -53,6 +65,58 @@
         </section>
     </main>
 
+    <!-- Auth: Log in -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" data-close-modal="login-modal">&times;</span>
+            <h2>Log in</h2>
+            <p class="modal-hint">Use the email and password you signed up with.</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required autocomplete="username" placeholder="you@university.edu">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required autocomplete="current-password" placeholder="Password">
+                </div>
+                <p class="form-error hidden" id="login-error" role="alert"></p>
+                <button type="submit" class="btn-primary btn-block">Log in</button>
+            </form>
+            <p class="modal-footer-link">No account? <button type="button" class="link-btn" id="login-switch-signup">Sign up</button></p>
+        </div>
+    </div>
+
+    <!-- Auth: Sign up -->
+    <div id="signup-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" data-close-modal="signup-modal">&times;</span>
+            <h2>Create account</h2>
+            <p class="modal-hint">Your bookings are saved to this account on this device.</p>
+            <form id="signup-form">
+                <div class="form-group">
+                    <label for="signup-name">Display name</label>
+                    <input type="text" id="signup-name" required autocomplete="name" placeholder="Your name">
+                </div>
+                <div class="form-group">
+                    <label for="signup-student-id">Student ID</label>
+                    <input type="text" id="signup-student-id" required autocomplete="off" placeholder="Student ID">
+                </div>
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" required autocomplete="email" placeholder="you@university.edu">
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" required autocomplete="new-password" placeholder="At least 8 characters" minlength="8">
+                </div>
+                <p class="form-error hidden" id="signup-error" role="alert"></p>
+                <button type="submit" class="btn-primary btn-block">Create account</button>
+            </form>
+            <p class="modal-footer-link">Already have an account? <button type="button" class="link-btn" id="signup-switch-login">Log in</button></p>
+        </div>
+    </div>
+
     <!-- Booking Modal -->
     <div id="booking-modal" class="modal">
         <div class="modal-content">
@@ -85,6 +149,7 @@
                     <label for="student-id">Student ID:</label>
                     <input type="text" id="student-id" required placeholder="Enter your student ID">
                 </div>
+                <p class="modal-hint booking-profile-hint">Pre-filled from your account; you can adjust for this booking if needed.</p>
                 <button type="submit" class="btn-primary">Confirm Booking</button>
             </form>
         </div>
